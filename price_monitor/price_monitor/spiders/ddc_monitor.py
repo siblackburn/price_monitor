@@ -9,10 +9,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 from scrapy.spiders import CrawlSpider, Rule
 from price_monitor.items import PriceMonitorItem
-import urllib3
-import requests
-import json
-from bs4 import BeautifulSoup
+from scrapy.http import FormRequest
 import re
 
 
@@ -20,7 +17,7 @@ class DdcMonitorSpider(scrapy.Spider):
     name = 'ddc_monitor'
     allowed_domains = ['duluxdecoratorcentre.co.uk']
     start_urls = ['https://www.duluxdecoratorcentre.co.uk/']
-    page_number = 0
+    page_number = 1
 
     def __init__(self):
         self.declare_xpath()
@@ -35,6 +32,11 @@ class DdcMonitorSpider(scrapy.Spider):
         self.ProductImagesXpath = '//*[@id="list-of-products"]/li/div/div/div/a/span/img' #Gives all details behind image. Will need to modify to just return the link/image file
         #Still need price data via a JS request:https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups
 
+        self.PageNotFoundXpath = 'normalize-space(//*[@id="productListPage"]/div/text())'
+
+        self.price_IDXpath = '//*[@id="list-of-products"]/li/@data-id'
+
+
     def parse(self, response):
         for href in response.xpath(self.getAllCategoriesXpath):
             url = response.urljoin(href.extract())
@@ -47,8 +49,14 @@ class DdcMonitorSpider(scrapy.Spider):
 
     def parse_subcategory(self, response):
         for href in response.xpath(self.getAllMicroCategoriesXpath):
-            url = response.urljoin(href.extract())+"?page=%d" % self.page_number
+            url = response.urljoin(href.extract())
 
+            page = 1
+            # if response.xpath(self.PageNotFoundXpath).extract() != 'No products found.':
+            while page <2:
+                next_page = url+"?page=%d" % page
+                page += 1
+                yield scrapy.Request(next_page, callback=self.parse_main_item, dont_filter=True)
 
             yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
 
@@ -60,6 +68,26 @@ class DdcMonitorSpider(scrapy.Spider):
         item['product_name'] = response.xpath(self.ProductNamesXpath).extract()
         item['product_url'] = response.xpath(self.ProductLinksXpath).extract()
         item['product_image'] = response.xpath(self.ProductImagesXpath).extract()
+
+        product_id_list = []
+        for ids in response.xpath(self.price_IDXpath):
+            product_id = "ids%5B%5D=" + ids + "&"
+            product_id_list.append(product_id)
+
+        frmdata = product_id_list
+        post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
+        r = Request(post_url,
+                        method="POST",
+                         headers={
+                            'Content-Type': "application/x-www-form-urlencoded"
+                            },
+                        callback=self.parse,
+                        formdata=frmdata)
+        item['price_excl'] = r
         yield item
+
+    # def pagination(self, response):
+    #     pagination_test = response.xpath(self.PageNotFoundXpath).extract()
+    #     yield scrapy.Request(pagination_test, callback=self.parse_subcategory(), dont_filter=True)
 
 
