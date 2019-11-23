@@ -56,9 +56,11 @@ class DdcMonitorSpider(scrapy.Spider):
             page = 1
             # if response.xpath(self.PageNotFoundXpath).extract() != 'No products found.':
             while page < 2:
+
+                # NOTE(yuri): when you just append the page you will end up with a url like:
+                # ?page=1?page=2?page=3, so that is not the correct way to set a URL parameter.
                 next_page = url+"?page=%d" % page
                 page += 1
-                print(next_page)
                 yield scrapy.Request(next_page, callback=self.parse_main_item, dont_filter=True)
 
             yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
@@ -67,7 +69,9 @@ class DdcMonitorSpider(scrapy.Spider):
     def parse_main_item(self, response):
         scheme = DdcMonitorSpider.start_urls
 
-        # there are multiple products per page, so we should generate a list of products right?
+        # NOTE(yuri): there are multiple products per page, so we should generate a list of products right?
+        # I create a dictionary of items by their product ID. I do this because when I fetch the price information
+        # later, I will need to match up the price with the proper product ID.
         items_by_id = {}
         for product in zip(
             response.xpath(self.price_IDXpath).extract(),
@@ -84,12 +88,15 @@ class DdcMonitorSpider(scrapy.Spider):
             # set item into our dictionary by id
             items_by_id[product[0]] = item
         
-        def form_callback(response):
+        # this function is called after the price information has been fetched
+        def price_form_callback(response):
 
             # populate the price information of each item and then return our items
             for price_info in json.loads(response.text):
                 product_id = price_info['Id']
                 price = price_info['PriceInclVat']
+
+                # lookup the product by id and update it's price field
                 if product_id in items_by_id:
                     items_by_id[product_id]['price_excl'] = price
 
@@ -102,7 +109,7 @@ class DdcMonitorSpider(scrapy.Spider):
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
         yield FormRequest(post_url,
             formdata=dict(ids=list(items_by_id.keys())),
-            callback=form_callback
+            callback=price_form_callback
         )
 
     # def pagination(self, response):
