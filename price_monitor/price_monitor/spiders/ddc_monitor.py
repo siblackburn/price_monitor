@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
+import logging
 from urllib.parse import urlparse
 import urllib.parse
+import json
 import csv
 from scrapy.exporters import CsvItemExporter
 import urljoin
@@ -53,38 +55,55 @@ class DdcMonitorSpider(scrapy.Spider):
 
             page = 1
             # if response.xpath(self.PageNotFoundXpath).extract() != 'No products found.':
-            while page <2:
+            while page < 2:
                 next_page = url+"?page=%d" % page
                 page += 1
+                print(next_page)
                 yield scrapy.Request(next_page, callback=self.parse_main_item, dont_filter=True)
 
             yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
 
 
     def parse_main_item(self, response):
-        item = PriceMonitorItem()
         scheme = DdcMonitorSpider.start_urls
 
-        item['product_name'] = response.xpath(self.ProductNamesXpath).extract()
-        item['product_url'] = response.xpath(self.ProductLinksXpath).extract()
-        item['product_image'] = response.xpath(self.ProductImagesXpath).extract()
+        # there are multiple products per page, so we should generate a list of products right?
+        items_by_id = {}
+        for product in zip(
+            response.xpath(self.price_IDXpath).extract(),
+            response.xpath(self.ProductNamesXpath).extract(),
+            response.xpath(self.ProductLinksXpath).extract(),
+            response.xpath(self.ProductImagesXpath).extract()
+        ):
+            item = PriceMonitorItem()
+            item['product_id'] = product[0]
+            item['product_name'] = product[1]
+            item['product_url'] = product[2]
+            item['product_image'] = product[3]
 
-        product_id_list = []
-        for ids in response.xpath(self.price_IDXpath):
-            product_id = "ids%5B%5D=" + ids + "&"
-            product_id_list.append(product_id)
+            # set item into our dictionary by id
+            items_by_id[product[0]] = item
+        
+        def form_callback(response):
 
-        frmdata = product_id_list
+            # populate the price information of each item and then return our items
+            for price_info in json.loads(response.text):
+                product_id = price_info['Id']
+                price = price_info['PriceInclVat']
+                if product_id in items_by_id:
+                    items_by_id[product_id]['price_excl'] = price
+
+            # return all the items found
+            for item in items_by_id.values():
+                yield item
+
+
+        # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
-        r = Request(post_url,
-                        method="POST",
-                         headers={
-                            'Content-Type': "application/x-www-form-urlencoded"
-                            },
-                        callback=self.parse,
-                        formdata=frmdata)
-        item['price_excl'] = r
-        yield item
+        yield FormRequest(post_url,
+            formdata=dict(ids=list(items_by_id.keys())),
+            callback=form_callback
+        )
 
     # def pagination(self, response):
     #     pagination_test = response.xpath(self.PageNotFoundXpath).extract()
