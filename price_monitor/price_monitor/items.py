@@ -18,3 +18,5 @@ class PriceMonitorItem(scrapy.Item):
     product_url = scrapy.Field()
     product_image = scrapy.Field()
     price_excl = scrapy.Field()
+    retailer_site = scrapy.Field()
+    promo_flag = scrapy.Field()

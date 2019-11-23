@@ -31,7 +31,7 @@ class DdcMonitorSpider(scrapy.Spider):
         # at this point I'm now at a page with a list of products
         self.ProductLinksXpath = '//*[@id="list-of-products"]/li/div/div/div/div/a/@href'
         self.ProductNamesXpath = '//*[@id="list-of-products"]/li/div/div/div/div/a/span/text()' #product names in text
-        self.ProductImagesXpath = '//*[@id="list-of-products"]/li/div/div/div/a/span/img' #Gives all details behind image. Will need to modify to just return the link/image file
+        self.ProductImagesXpath = '//*[@id="list-of-products"]/li/div/div/div/a/span/img/@alt' #Gives all details behind image. Will need to modify to just return the link/image file
         #Still need price data via a JS request:https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups
 
         self.PageNotFoundXpath = 'normalize-space(//*[@id="productListPage"]/div/text())'
@@ -56,14 +56,12 @@ class DdcMonitorSpider(scrapy.Spider):
             page = 1
             # if response.xpath(self.PageNotFoundXpath).extract() != 'No products found.':
             while page < 2:
-
-                # NOTE(yuri): when you just append the page you will end up with a url like:
-                # ?page=1?page=2?page=3, so that is not the correct way to set a URL parameter.
                 next_page = url+"?page=%d" % page
                 page += 1
                 yield scrapy.Request(next_page, callback=self.parse_main_item, dont_filter=True)
 
             yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
+            # yield scrapy.Request(url="https://www.duluxdecoratorcentre.co.uk/special-offers", callback=self.parse_main_item, dont_filter=True)
 
 
     def parse_main_item(self, response):
@@ -77,43 +75,70 @@ class DdcMonitorSpider(scrapy.Spider):
             response.xpath(self.price_IDXpath).extract(),
             response.xpath(self.ProductNamesXpath).extract(),
             response.xpath(self.ProductLinksXpath).extract(),
-            response.xpath(self.ProductImagesXpath).extract()
+            response.xpath(self.ProductImagesXpath).extract(),
+            self.start_urls
         ):
             item = PriceMonitorItem()
             item['product_id'] = product[0]
             item['product_name'] = product[1]
             item['product_url'] = product[2]
             item['product_image'] = product[3]
+            item['retailer_site'] = product[4]
 
             # set item into our dictionary by id
             items_by_id[product[0]] = item
         
         # this function is called after the price information has been fetched
         def price_form_callback(response):
-
             # populate the price information of each item and then return our items
             for price_info in json.loads(response.text):
                 product_id = price_info['Id']
-                price = price_info['PriceInclVat']
+                price = price_info['PriceExclVat']
+                price_formatted = price[2:]
 
                 # lookup the product by id and update it's price field
                 if product_id in items_by_id:
-                    items_by_id[product_id]['price_excl'] = price
+                    items_by_id[product_id]['price_excl'] = price_formatted
 
             # return all the items found
-            for item in items_by_id.values():
-                yield item
-
+            for products in items_by_id.values():
+                yield products
 
         # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
         yield FormRequest(post_url,
             formdata=dict(ids=list(items_by_id.keys())),
             callback=price_form_callback
-        )
+                                        )
 
-    # def pagination(self, response):
-    #     pagination_test = response.xpath(self.PageNotFoundXpath).extract()
-    #     yield scrapy.Request(pagination_test, callback=self.parse_subcategory(), dont_filter=True)
+        '''
+        Pulling promo flag from the promo Javascript post request
+        '''
+        # def promo_form_callback(response):
+        #
+        #     # populate the price information of each item and then return our items
+        #     for price_info in json.loads(response.text):
+        #         product_id = price_info['Id']
+        #         promo = price_info['Promotions'][0]
+        #         if promo is not None:
+        #             promo_flag = "promo"
+        #         else:
+        #             promo_flag = "no promo"
+        #
+        #         # lookup the product by id and update it's price field
+        #         if product_id in items_by_id:
+        #             items_by_id[product_id]['promo flag'] = promo_flag
+        #
+        #     # return all the items found
+        #     for products in items_by_id.values():
+        #         yield products
+        #
+        # promo_url = "https://www.duluxdecoratorcentre.co.uk/productlist/getlistpromotions"
+        # yield FormRequest(promo_url,
+        #                   formdata=dict(ids=list(items_by_id.keys())),
+        #                   callback=promo_form_callback
+        #                   )
+
+
 
 

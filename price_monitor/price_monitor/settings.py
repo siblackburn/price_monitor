@@ -64,10 +64,19 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'price_monitor.pipelines.PriceMonitorPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'price_monitor.pipelines.PriceMonitorPipeline': 300,
+   'price_monitor.pipelines.PriceCrawlerDBPipeline': 200
+}
 
+CONNECTION_STRING = "{drivername}://{user}:{passwd}@{host}:{port}/{db_name}?charset=utf8".format(
+     drivername="mysql",
+     user="root",
+     passwd="pm",
+     host="localhost",
+     port="3306",
+     db_name="price_crawler_db",
+)
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True
