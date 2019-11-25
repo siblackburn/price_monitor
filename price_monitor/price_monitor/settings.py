@@ -66,7 +66,8 @@ ROBOTSTXT_OBEY = True
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'price_monitor.pipelines.PriceMonitorPipeline': 300,
-   'price_monitor.pipelines.PriceCrawlerDBPipeline': 200
+   'price_monitor.pipelines.PriceCrawlerDBPipeline': 200,
+   'price_monitor.pipelines.CategorylinksPipeline': 100,
 }
 
 drivername="mysql"

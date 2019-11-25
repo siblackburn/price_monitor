@@ -11,6 +11,7 @@ from price_monitor.models import Listings, db_connect, create_table
 from sqlalchemy.orm import sessionmaker
 from scrapy.exporters import CsvItemExporter
 from datetime import date
+from .items import PriceMonitorItem, PriceMonitorCategories
 
 
 class PriceMonitorPipeline(object):
@@ -24,7 +25,8 @@ class PriceMonitorPipeline(object):
         self.file.close()
 
     def process_item(self, item, spider):
-        self.exporter.export_item(item)
+        if isinstance(item, PriceMonitorItem):
+            self.exporter.export_item(item)
         return item
 
 class PriceCrawlerDBPipeline(object):
@@ -37,7 +39,7 @@ class PriceCrawlerDBPipeline(object):
         session = self.Session()
 
         self.listings = Listings()
-        self.listings.product_hash = item["product_id"]
+        # self.listings.product_hash = item["product_id"]
         self.listings.product_name = item['product_name']
         self.listings.product_url = item['product_url']
         self.listings.product_image_url = item['product_image']
@@ -48,7 +50,6 @@ class PriceCrawlerDBPipeline(object):
         # self.listings.promo_flag = item['promo_flag']
 
         try:
-
             existing_entry = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(Listings.product_url == item['product_url']).first()
             if existing_entry is None:
                 session.add(self.listings)
@@ -62,3 +63,19 @@ class PriceCrawlerDBPipeline(object):
             session.close()
 
         return item
+
+
+class CategorylinksPipeline(object):
+    def __init__(self):
+        self.file = open("category_links.csv", 'wb')
+        self.exporter = CsvItemExporter(self.file)
+        self.exporter.start_exporting()
+
+    def close_spider(self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()
+
+    def process_item(self, cats, spider):
+        if isinstance(cats, PriceMonitorCategories):
+            self.exporter.export_item(cats)
+        return cats

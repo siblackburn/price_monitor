@@ -27,13 +27,13 @@ class Listings(Base):
 
     unique_id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     product_hash = Column(String(200), nullable=True)
-    product_name = Column(String(200), nullable=False)
+    product_name = Column(String(200), nullable=True)
     product_url = Column(String(200), nullable=True)
     product_image_url = Column(String(200), nullable=True)
     price_excl = Column(Float, nullable=True)
     promo_flag = Column(String(20), nullable=True)
-    retailer = Column(String(300), nullable=False)
-    date_scraped = Column(DateTime, nullable=False, default=date.today())
+    retailer = Column(String(300), nullable=True)
+    date_scraped = Column(DateTime, nullable=True, default=date.today())
 
     # insert column to check if scraped data is already in database
     # consider either hybried_property or column_property
