@@ -9,38 +9,54 @@ import sqlalchemy
 from sqlalchemy import create_engine, Column, Table, ForeignKey, MetaData
 from price_monitor.models import Listings, db_connect, create_table
 from sqlalchemy.orm import sessionmaker
-import db
+from scrapy.exporters import CsvItemExporter
+from datetime import date
 
 
 class PriceMonitorPipeline(object):
+    def __init__(self):
+        self.file = open("test_scrape.csv", 'wb')
+        self.exporter = CsvItemExporter(self.file)
+        self.exporter.start_exporting()
+
+    def close_spider(self, spider):
+        self.exporter.finish_exporting()
+        self.file.close()
+
     def process_item(self, item, spider):
+        self.exporter.export_item(item)
         return item
 
 class PriceCrawlerDBPipeline(object):
     def __init__(self):
-        engine = db.connect()
-        create_engine(engine)
+        engine = db_connect()
+        create_table(engine)
         self.Session = sessionmaker(bind=engine)
 
     def process_item(self, item, spider):
         session = self.Session()
 
-        listings = Listings()
-        listings.product_hash = item["product_id"]
-        listings.product_name = item['product_name']
-        listings.product_url = item['product_url']
-        listings.product_image_url = item['product_image']
-        listings.retailer = item['retailer_site']
-        listings.price_excl = item['price_excl']
-        listings.promo_flag = item['promo_flag']
+        self.listings = Listings()
+        self.listings.product_hash = item["product_id"]
+        self.listings.product_name = item['product_name']
+        self.listings.product_url = item['product_url']
+        self.listings.product_image_url = item['product_image']
+        self.listings.retailer = item['retailer_site']
+        self.listings.price_excl = item['price_excl']
+        self.listings.date_scraped = date.today()
+
+        # self.listings.promo_flag = item['promo_flag']
 
         try:
-            session.add(listings)
-            session.commit()
+
+            existing_entry = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(Listings.product_url == item['product_url']).first()
+            if existing_entry is None:
+                session.add(self.listings)
+                session.commit()
 
         except:
             session.rollback()
-            raise
+            raise Exception(f'something went wrong')
 
         finally:
             session.close()

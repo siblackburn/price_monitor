@@ -18,8 +18,7 @@ import re
 class DdcMonitorSpider(scrapy.Spider):
     name = 'ddc_monitor'
     allowed_domains = ['duluxdecoratorcentre.co.uk']
-    start_urls = ['https://www.duluxdecoratorcentre.co.uk/']
-    page_number = 1
+    start_urls = ['https://www.duluxdecoratorcentre.co.uk']
 
     def __init__(self):
         self.declare_xpath()
@@ -62,7 +61,7 @@ class DdcMonitorSpider(scrapy.Spider):
 
             yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
             # yield scrapy.Request(url="https://www.duluxdecoratorcentre.co.uk/special-offers", callback=self.parse_main_item, dont_filter=True)
-
+            # Need to also add a separate yield for the special offers page, which doesn't have sub category links and so doesn't get passed to main parse
 
     def parse_main_item(self, response):
         scheme = DdcMonitorSpider.start_urls
@@ -94,15 +93,15 @@ class DdcMonitorSpider(scrapy.Spider):
             for price_info in json.loads(response.text):
                 product_id = price_info['Id']
                 price = price_info['PriceExclVat']
-                price_formatted = price[2:]
+                price_formatted = price[1:]
 
                 # lookup the product by id and update it's price field
                 if product_id in items_by_id:
-                    items_by_id[product_id]['price_excl'] = price_formatted
+                    items_by_id[product_id]['price_excl'] = float(price_formatted)
 
             # return all the items found
-            for products in items_by_id.values():
-                yield products
+            for items in items_by_id.values():
+                yield items
 
         # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
@@ -114,24 +113,21 @@ class DdcMonitorSpider(scrapy.Spider):
         '''
         Pulling promo flag from the promo Javascript post request
         '''
-        # def promo_form_callback(response):
-        #
-        #     # populate the price information of each item and then return our items
-        #     for price_info in json.loads(response.text):
-        #         product_id = price_info['Id']
-        #         promo = price_info['Promotions'][0]
-        #         if promo is not None:
+        # def promo_form_callback(res):
+        #     for promo_info in json.loads(res.text):
+        #         product_id = promo_info['Id']
+        #         promo = promo_info['Promotions']
+        #         if promo > 0:
         #             promo_flag = "promo"
         #         else:
         #             promo_flag = "no promo"
         #
-        #         # lookup the product by id and update it's price field
+        #         # lookup the product by id and update promo flag
         #         if product_id in items_by_id:
-        #             items_by_id[product_id]['promo flag'] = promo_flag
+        #             items_by_id[product_id]['promo_flag'] = promo_flag
         #
-        #     # return all the items found
-        #     for products in items_by_id.values():
-        #         yield products
+        #     for promo_f in items_by_id.values():
+        #         yield promo_f
         #
         # promo_url = "https://www.duluxdecoratorcentre.co.uk/productlist/getlistpromotions"
         # yield FormRequest(promo_url,
