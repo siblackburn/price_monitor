@@ -64,6 +64,8 @@ class DdcMonitorSpider(scrapy.Spider):
             # Need to also add a separate yield for the special offers page, which doesn't have sub category links and so doesn't get passed to main parse
 
     def parse_main_item(self, response):
+
+        # NOTE(yuri): what is 'scheme'? The name doesn't make sense to me
         scheme = DdcMonitorSpider.start_urls
 
         # NOTE(yuri): there are multiple products per page, so we should generate a list of products right?
@@ -74,15 +76,14 @@ class DdcMonitorSpider(scrapy.Spider):
             response.xpath(self.price_IDXpath).extract(),
             response.xpath(self.ProductNamesXpath).extract(),
             response.xpath(self.ProductLinksXpath).extract(),
-            response.xpath(self.ProductImagesXpath).extract(),
-            self.start_urls
+            response.xpath(self.ProductImagesXpath).extract()
         ):
             item = PriceMonitorItem()
             item['product_id'] = product[0]
             item['product_name'] = product[1]
             item['product_url'] = product[2]
             item['product_image'] = product[3]
-            item['retailer_site'] = product[4]
+            item['retailer_site'] = scheme
 
             # set item into our dictionary by id
             items_by_id[product[0]] = item
@@ -100,8 +101,9 @@ class DdcMonitorSpider(scrapy.Spider):
                     items_by_id[product_id]['price_excl'] = float(price_formatted)
 
             # return all the items found
-            for items in items_by_id.values():
-                yield items
+            logging.info(f'Found {len(items_by_id)} items')
+            for item in items_by_id.values():
+                yield item
 
         # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
