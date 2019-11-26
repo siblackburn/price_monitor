@@ -5,7 +5,7 @@ from sqlalchemy import (
     Integer, String, Date, DateTime, Float, Boolean, Text)
 from scrapy.utils.project import get_project_settings
 from datetime import datetime, date
-from sqlalchemy.ext.hybrid import hybrid_property
+
 
 Base = declarative_base()
 
@@ -19,7 +19,7 @@ def db_connect():
 
 
 def create_table(engine):
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(bind=engine)
 
 
 class Listings(Base):
@@ -27,20 +27,20 @@ class Listings(Base):
 
     unique_id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     product_hash = Column(String(200), nullable=True)
-    product_name = Column(String(200), nullable=True)
-    product_url = Column(String(200), nullable=True)
+    product_name = Column(String(200), nullable=False)
+    product_url = Column(String(200), nullable=False)
     product_image_url = Column(String(200), nullable=True)
     price_excl = Column(Float, nullable=True)
     promo_flag = Column(String(20), nullable=True)
-    retailer = Column(String(300), nullable=True)
-    date_scraped = Column(DateTime, nullable=True, default=date.today())
+    retailer = Column(String(300), nullable=False)
+    date_scraped = Column(DateTime, nullable=False, default=date.today())
+    price_per_unit = Column(Float, nullable=True)
+    unit_of_measure = Column(String(10), nullable=True)
+    number_of_units = Column(Float, nullable=True)
 
-    # insert column to check if scraped data is already in database
-    # consider either hybried_property or column_property
 
-    @hybrid_property
-    def url_date(self):
-        return self.product_url + self.date_scraped
+
+
 
 
 

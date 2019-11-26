@@ -16,6 +16,9 @@ class PriceMonitorItem(scrapy.Item):
     price_excl = scrapy.Field()
     retailer_site = scrapy.Field()
     promo_flag = scrapy.Field()
+    price_per_unit = scrapy.Field()
+    unit_measure = scrapy.Field()
+    number_of_units = scrapy.Field()
 
 
 class PriceMonitorCategories(scrapy.Item):

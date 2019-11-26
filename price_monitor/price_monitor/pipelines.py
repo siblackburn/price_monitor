@@ -12,6 +12,8 @@ from sqlalchemy.orm import sessionmaker
 from scrapy.exporters import CsvItemExporter
 from datetime import date
 from .items import PriceMonitorItem, PriceMonitorCategories
+from sqlalchemy.dialects.mysql import insert
+from sqlalchemy import update
 
 
 class PriceMonitorPipeline(object):
@@ -39,7 +41,7 @@ class PriceCrawlerDBPipeline(object):
         session = self.Session()
 
         self.listings = Listings()
-        # self.listings.product_hash = item["product_id"]
+        self.listings.product_hash = item["product_id"]
         self.listings.product_name = item['product_name']
         self.listings.product_url = item['product_url']
         self.listings.product_image_url = item['product_image']
@@ -48,11 +50,32 @@ class PriceCrawlerDBPipeline(object):
         self.listings.date_scraped = date.today()
 
         # self.listings.promo_flag = item['promo_flag']
+        self.listings.price_per_unit = item['price_per_unit']
+        self.listings.unit_of_measure = item['unit_measure']
+        self.listings.number_of_units = item['number_of_units']
 
         try:
-            existing_entry = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(Listings.product_url == item['product_url']).first()
+            existing_entry = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(
+                Listings.product_url == self.listings.product_url).first()
             if existing_entry is None:
                 session.add(self.listings)
+                session.commit()
+
+            else:
+                row = session.query(Listings).filter(Listings.date_scraped == date.today()).\
+                    filter(Listings.product_name == self.listings.product_name).first()
+                row.product_hash = item["product_id"]
+                row.product_name = item['product_name']
+                row.product_url = item['product_url']
+                row.product_image_url = item['product_image']
+                row.retailer = item['retailer_site']
+                row.price_excl = item['price_excl']
+                row.date_scraped = date.today()
+
+                # row.promo_flag = item['promo_flag']
+                row.price_per_unit = item['price_per_unit']
+                row.unit_of_measure = item['unit_measure']
+                row.number_of_units = item['number_of_units']
                 session.commit()
 
         except:

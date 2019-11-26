@@ -13,12 +13,14 @@ from scrapy.spiders import CrawlSpider, Rule
 from price_monitor.items import PriceMonitorItem
 from scrapy.http import FormRequest
 import re
+from scrapy.extensions import closespider
 
 
 class DdcMonitorSpider(scrapy.Spider):
     name = 'ddc_monitor'
     allowed_domains = ['duluxdecoratorcentre.co.uk']
     start_urls = ['https://www.duluxdecoratorcentre.co.uk']
+    max_pages = 50
 
     def __init__(self):
         self.declare_xpath()
@@ -40,7 +42,7 @@ class DdcMonitorSpider(scrapy.Spider):
 
     def parse(self, response):
         for href in response.xpath(self.getAllCategoriesXpath):
-            url = response.urljoin(href.extract())
+            url = response.urljoin(href.get())
             yield scrapy.Request(url=url, callback=self.parse_category)
 
     def parse_category(self, response):
@@ -52,19 +54,15 @@ class DdcMonitorSpider(scrapy.Spider):
         for href in response.xpath(self.getAllMicroCategoriesXpath):
             url = response.urljoin(href.extract())
 
-            page = 1
-            # if response.xpath(self.PageNotFoundXpath).extract() != 'No products found.':
-            while page < 2:
-                next_page = url+"?page=%d" % page
-                page += 1
-                yield scrapy.Request(next_page, callback=self.parse_main_item, dont_filter=True)
+            count_number = response.xpath('normalize-space(//*[@id="product-list-panel"]/div[1]/div[1]/text())').get()
+            paginated_url = url + "?count=" + count_number
 
-            yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
+            yield scrapy.Request(paginated_url, callback=self.parse_main_item, dont_filter=True)
             # yield scrapy.Request(url="https://www.duluxdecoratorcentre.co.uk/special-offers", callback=self.parse_main_item, dont_filter=True)
             # Need to also add a separate yield for the special offers page, which doesn't have sub category links and so doesn't get passed to main parse
 
     def parse_main_item(self, response):
-        scheme = DdcMonitorSpider.start_urls
+        host = DdcMonitorSpider.start_urls
 
         # NOTE(yuri): there are multiple products per page, so we should generate a list of products right?
         # I create a dictionary of items by their product ID. I do this because when I fetch the price information
@@ -75,14 +73,17 @@ class DdcMonitorSpider(scrapy.Spider):
             response.xpath(self.ProductNamesXpath).extract(),
             response.xpath(self.ProductLinksXpath).extract(),
             response.xpath(self.ProductImagesXpath).extract(),
-            self.start_urls
         ):
+
             item = PriceMonitorItem()
             item['product_id'] = product[0]
             item['product_name'] = product[1]
             item['product_url'] = product[2]
             item['product_image'] = product[3]
-            item['retailer_site'] = product[4]
+            item['retailer_site'] = host
+            item['price_per_unit'] = None
+            item['unit_measure'] = None
+            item['number_of_units'] = None
 
             # set item into our dictionary by id
             items_by_id[product[0]] = item
@@ -100,6 +101,7 @@ class DdcMonitorSpider(scrapy.Spider):
                     items_by_id[product_id]['price_excl'] = float(price_formatted)
 
             # return all the items found
+            logging.info(f'Found {len(items_by_id)} items')
             for items in items_by_id.values():
                 yield items
 
