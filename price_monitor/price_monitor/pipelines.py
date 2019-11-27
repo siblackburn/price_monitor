@@ -53,17 +53,24 @@ class PriceCrawlerDBPipeline(object):
         self.listings.price_per_unit = item['price_per_unit']
         self.listings.unit_of_measure = item['unit_measure']
         self.listings.number_of_units = item['number_of_units']
+        self.listings.url_l3 = item['url_l3']
+        self.listings.url_l2 = item['url_l2']
+        self.listings.url_l1 = item['url_l1']
+
+        query_unique = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(
+                Listings.product_name == self.listings.product_name).first()
 
         try:
-            existing_entry = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(
-                Listings.product_url == self.listings.product_url).first()
-            if existing_entry is None:
+            unique_check = query_unique
+            print("MY EXISTING ENTRY: ", unique_check)
+
+            if unique_check is None:
+                print("ADDING TO DB")
                 session.add(self.listings)
                 session.commit()
 
             else:
-                row = session.query(Listings).filter(Listings.date_scraped == date.today()).\
-                    filter(Listings.product_name == self.listings.product_name).first()
+                row = query_unique
                 row.product_hash = item["product_id"]
                 row.product_name = item['product_name']
                 row.product_url = item['product_url']
@@ -71,12 +78,16 @@ class PriceCrawlerDBPipeline(object):
                 row.retailer = item['retailer_site']
                 row.price_excl = item['price_excl']
                 row.date_scraped = date.today()
+                row.url_l3 = item['url_l3']
+                row.url_l2 = item['url_l2']
+                row.url_l1 = item['url_l1']
 
                 # row.promo_flag = item['promo_flag']
                 row.price_per_unit = item['price_per_unit']
                 row.unit_of_measure = item['unit_measure']
                 row.number_of_units = item['number_of_units']
                 session.commit()
+                print("UPDATED DB!!!!!!!!!!!1")
 
         except:
             session.rollback()

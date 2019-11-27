@@ -19,6 +19,9 @@ class PriceMonitorItem(scrapy.Item):
     price_per_unit = scrapy.Field()
     unit_measure = scrapy.Field()
     number_of_units = scrapy.Field()
+    url_l1 = scrapy.Field()
+    url_l2 = scrapy.Field()
+    url_l3 = scrapy.Field()
 
 
 class PriceMonitorCategories(scrapy.Item):
