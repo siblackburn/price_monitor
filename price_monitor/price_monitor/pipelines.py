@@ -55,7 +55,6 @@ class PriceCrawlerDBPipeline(object):
         self.listings.number_of_units = item['number_of_units']
         self.listings.url_l3 = item['url_l3']
         self.listings.url_l2 = item['url_l2']
-        self.listings.url_l1 = item['url_l1']
 
         query_unique = session.query(Listings).filter(Listings.date_scraped == date.today()).filter(
                 Listings.product_name == self.listings.product_name).first()
@@ -80,7 +79,6 @@ class PriceCrawlerDBPipeline(object):
                 row.date_scraped = date.today()
                 row.url_l3 = item['url_l3']
                 row.url_l2 = item['url_l2']
-                row.url_l1 = item['url_l1']
 
                 # row.promo_flag = item['promo_flag']
                 row.price_per_unit = item['price_per_unit']

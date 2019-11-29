@@ -55,10 +55,10 @@ class DdcMonitorSpider(scrapy.Spider):
             url = response.urljoin(href.extract())
 
             count_number = response.xpath('normalize-space(//*[@id="product-list-panel"]/div[1]/div[1]/text())').get()
-            paginated_url = url + "?count=" + count_number
-            url_l3 = response.meta['url_l3']
+            paginated_url = url + "?count=" + str(count_number)
+            url_l3 = response.meta.get('url_l3')
 
-            yield scrapy.Request(paginated_url, callback=self.parse_main_item, dont_filter=True, meta={'url_l2': paginated_url,'url_l3': url_l3} )
+            yield scrapy.Request(paginated_url, callback=self.parse_main_item, dont_filter=True, meta={'url_l3': url_l3} )
             # yield scrapy.Request(url="https://www.duluxdecoratorcentre.co.uk/special-offers", callback=self.parse_main_item, dont_filter=True)
             # Need to also add a separate yield for the special offers page, which doesn't have sub category links and so doesn't get passed to main parse
 
@@ -69,9 +69,9 @@ class DdcMonitorSpider(scrapy.Spider):
         # I create a dictionary of items by their product ID. I do this because when I fetch the price information
         # later, I will need to match up the price with the proper product ID.
         items_by_id = {}
-        url_l2 = response.meta['url_l2']
+        url_l2 = response.url
         url_l3 = response.meta['url_l3']
-        url_l1 = response.url
+
 
         for product in zip(
             response.xpath(self.price_IDXpath).extract(),
@@ -92,8 +92,6 @@ class DdcMonitorSpider(scrapy.Spider):
             item['number_of_units'] = None
             item['url_l3'] = url_l3
             item['url_l2'] = url_l2
-            item['url_l1'] = url_l1
-
 
             # set item into our dictionary by id
             items_by_id[product[0]] = item

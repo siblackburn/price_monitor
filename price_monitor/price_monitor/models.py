@@ -37,7 +37,6 @@ class Listings(Base):
     price_per_unit = Column(Float, nullable=True)
     unit_of_measure = Column(String(10), nullable=True)
     number_of_units = Column(Float, nullable=True)
-    url_l1 = Column(String(200), nullable=True)
     url_l2 = Column(String(200), nullable=True)
     url_l3 = Column(String(200), nullable=True)
 
