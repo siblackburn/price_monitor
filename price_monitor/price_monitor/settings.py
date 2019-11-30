@@ -67,7 +67,7 @@ ROBOTSTXT_OBEY = True
 ITEM_PIPELINES = {
    'price_monitor.pipelines.PriceMonitorPipeline': 300,
    'price_monitor.pipelines.PriceCrawlerDBPipeline': 200,
-   'price_monitor.pipelines.CategorylinksPipeline': 100,
+   'price_monitor.pipelines.PriceCrawlerStatsPipeline': 300
 }
 
 drivername="mysql"
@@ -98,3 +98,12 @@ CONNECTION_STRING = f'mysql+pymysql://{user}:{passwd}@{host}/{db_name}'
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+import logging
+from scrapy.utils.log import configure_logging
+configure_logging(install_root_handler = False)
+logging.basicConfig (
+   filename='logging.txt',
+   format='%(levelname)s: %(your_message)s',
+   level=logging.INFO
+)

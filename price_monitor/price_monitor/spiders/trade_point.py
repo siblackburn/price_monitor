@@ -10,7 +10,7 @@ import urljoin
 from scrapy.linkextractors import LinkExtractor
 from scrapy import Request
 from scrapy.spiders import CrawlSpider, Rule
-from price_monitor.items import PriceMonitorItem, PriceMonitorCategories
+from price_monitor.items import PriceMonitorItem
 from scrapy.http import FormRequest
 import re
 
@@ -31,7 +31,7 @@ class TradePointSpider(scrapy.Spider):
 
         self.ProductLinksXpath = '//*[@id]/div/div/h3/a/@href' # all product links: TP
         self.ProductNamesXpath = '//*[@id]/div/div/h3/a/text()'  # product names in text: TP
-        self.ProductImagesXpath = '//*[@id]/a/img'  #link to TP images
+        self.ProductImagesXpath = '//*[@id]/a/img/text()'  #link to TP images
         self.PricePoundsXpath = '//*[@id]/div[1]/div[2]/div/p[2]/strong/span/span[2]/text()'
         self.PricePenceXpath = '//*[@id]/div[1]/div[2]/div/p[2]/strong/span/span[4]/text()'
 
@@ -48,15 +48,19 @@ class TradePointSpider(scrapy.Spider):
     def parse_category(self, response):
         for href in response.xpath(self.getAllSubCategoriesXpath):
             url = response.urljoin(href.extract())
-            yield scrapy.Request(url, callback=self.parse_subcategory)
+            yield scrapy.Request(url, callback=self.parse_subcategory, meta={'url_l4' : url})
 
     def parse_subcategory(self, response):
         for href in response.xpath(self.getAllMicroCategoriesXpath):
             url = response.urljoin(href.extract())
-            yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True)
+            url_l4 = response.meta.get('url_l4')
+            yield scrapy.Request(url, callback=self.parse_main_item, dont_filter=True, meta={'url_l4':str(url_l4), 'url_l3': str(url)} )
 
     def parse_main_item(self, response):
         host = TradePointSpider.start_urls
+        url_l2 = str(response.url)
+        url_l3 = response.meta.get('url_l3')
+        url_l4 = response.meta.get('url_l4')
 
         for product in zip(
             response.xpath(self.ProductNamesXpath).extract(),
@@ -70,7 +74,7 @@ class TradePointSpider(scrapy.Spider):
 
         ):
             item = PriceMonitorItem()
-            item['product_id'] = ""
+            item['product_id'] = None
             item['product_name'] = product[0]
             item['product_url'] = product[1]
             item['product_image'] = product[2]
@@ -79,12 +83,14 @@ class TradePointSpider(scrapy.Spider):
             item['price_per_unit'] = float(product[5] + "." + product[6])
             item['unit_measure'] = product[7]
             item['number_of_units'] = round((item['price_excl'] / item['price_per_unit']), 3)
-
+            item['url_l4'] = url_l4
+            item['url_l3'] = url_l3
+            item['url_l2'] = url_l2
             yield item
 
-        for href in response.xpath(self.getALLPagesXpath):
-            next_page = response.urljoin(href.extract())
-            yield scrapy.Request(next_page, self.parse_main_item, dont_filter=True)
+        # for href in response.xpath(self.getALLPagesXpath):
+        #     next_page = response.urljoin(href.extract())
+        #     yield scrapy.Request(next_page, self.parse_main_item, dont_filter=True)
 
 
 

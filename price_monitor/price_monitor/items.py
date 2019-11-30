@@ -21,7 +21,13 @@ class PriceMonitorItem(scrapy.Item):
     number_of_units = scrapy.Field()
     url_l2 = scrapy.Field()
     url_l3 = scrapy.Field()
+    url_l4 = scrapy.Field()
 
+class PriceMonitorStats(scrapy.Item):
+    retailer = scrapy.Field()
+    date_scraped = scrapy.Field()
+    time_scraped = scrapy.Field()
+    total_entries = scrapy.Field()
+    total_fails = scrapy.Field()
+    Total_crawl_time = scrapy.Field()
 
-class PriceMonitorCategories(scrapy.Item):
-    category_link = scrapy.Field()
