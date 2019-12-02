@@ -7,7 +7,7 @@
 import mysql.connector
 import sqlalchemy
 from sqlalchemy import create_engine, Column, Table, ForeignKey, MetaData
-from price_monitor.models import Listings, Scrape_Stats, db_connect, create_table
+from price_monitor.models import Listings, ScrapeStats, db_connect, create_table
 from sqlalchemy.orm import sessionmaker
 from scrapy.exporters import CsvItemExporter
 from datetime import date
@@ -72,6 +72,7 @@ class PriceCrawlerDBPipeline(object):
             session.execute(on_duplicate_key_stmt)
             logging.info(f'Executed duplicate key statement')
             session.commit()
+            logging.info(f'{self.listings.product_name} committed to DB')
 
         except:
             session.rollback()
@@ -90,10 +91,37 @@ class PriceCrawlerStatsPipeline(object):
         create_table(engine)
         self.Session = sessionmaker(bind=engine)
 
-    def process_item(self, item, spider):
+    def process_item(self, total_entries, spider):
         session = self.Session()
 
-        self.listings = ScrapeStats()
+        self.scrape_stats = ScrapeStats()
+        self.scrape_stats.total_entries = total_entries
+
+        columns_to_dict = lambda obj: {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+
+        try:
+            insert_stmt = insert(Listings).values(
+                **columns_to_dict(self.scrape_stats))
+
+            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
+                {'date_scraped': date.today(), 'time_scraped': self.scrape_stats.time_Scraped, 'retailer': self.scrape_stats.retailer}
+            )
+
+            logging.info(f'attempting to write db entry: {self.scrape_stats.retailer} on date {self.scrape_stats.date_scraped}')
+            session.execute(on_duplicate_key_stmt)
+            logging.info(f'Executed duplicate key statement')
+            session.commit()
+            logging.info(f'{self.scrape_stats.retailer} committed to DB')
+
+        except:
+            session.rollback()
+            logging.info(f'item was not written to database:{self.scrape_stats.retailer} on date {self.scrape_stats.date_scraped}')
+            raise Exception(f'something went wrong')
+
+        finally:
+            session.close()
+
+        return total_entries
 
 
 # class CategorylinksPipeline(object):

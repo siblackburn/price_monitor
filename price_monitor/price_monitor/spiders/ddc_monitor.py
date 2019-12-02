@@ -20,11 +20,10 @@ class DdcMonitorSpider(scrapy.Spider):
     name = 'ddc_monitor'
     allowed_domains = ['duluxdecoratorcentre.co.uk']
     start_urls = ['https://www.duluxdecoratorcentre.co.uk']
-    max_pages = 50
 
-    def __init__(self, total_items):
+
+    def __init__(self):
         self.declare_xpath()
-        self.total_items = total_items
 
     def declare_xpath(self):
         self.getAllCategoriesXpath = "/html/body/div[1]/header/div[1]/div/div[2]/div[3]/div/nav/ul/li/a/@href"  # all category links by calling items in the list with href
@@ -144,9 +143,9 @@ class DdcMonitorSpider(scrapy.Spider):
             for items in items_by_id.values():
                 yield items
 
-            self.total_items = 0
-            self.total_items += len(items_by_id)
-            return self.total_items
+        self.total_items = 0
+        self.total_items += len(items_by_id)
+
 
         # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
@@ -155,17 +154,20 @@ class DdcMonitorSpider(scrapy.Spider):
                           callback=price_form_callback
                           )
 
-
-class ExtensionThatAccessStats(object):
-    def __init__(self, stats):
-        self.stats = stats
+        total_entries = self.crawler.stats.set_value("Total items scraped", self.total_items, spider=DdcMonitorSpider)
+        yield total_entries
 
 
-    def from_crawler(cls, crawler):
-        key_stats = StatsCollector.get_stats(spider=DdcMonitorSpider)
-        total_items = StatsCollector.set_value("Total items scraped", self.total_items, spider=DdcMonitorSpider)
-
-        return cls(crawler.stats)
+# class ExtensionThatAccessStats(object):
+#     def __init__(self, stats):
+#         self.stats = stats
+#
+#     @classmethod
+#     def from_crawler(cls, crawler):
+#         key_stats = StatsCollector.get_stats(spider=DdcMonitorSpider)
+#         total_items = StatsCollector.set_value("Total items scraped", self.total_items, spider=DdcMonitorSpider)
+#
+#         return key_stats
 
 
 

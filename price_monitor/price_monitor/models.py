@@ -4,8 +4,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import (
     Integer, String, Date, DateTime, Float, Boolean, Text)
 from scrapy.utils.project import get_project_settings
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlalchemy import UniqueConstraint
+import pytz
 
 Base = declarative_base()
 
@@ -37,22 +38,22 @@ class Listings(Base):
     price_per_unit = Column(Float, nullable=True)
     unit_of_measure = Column(String(10), nullable=True)
     number_of_units = Column(Float, nullable=True)
-    url_l2 = Column(String(200), nullable=True)
-    url_l3 = Column(String(200), nullable=True)
-    url_l4 = Column(String(200), nullable=True)
+    url_l2 = Column(String(300), nullable=True)
+    url_l3 = Column(String(300), nullable=True)
+    url_l4 = Column(String(300), nullable=True)
 
     UniqueConstraint('date_scraped', 'product_url', 'retailer', name='date_product_retailer_unique_constraint')
 
 
 class ScrapeStats(Base):
-    __tablename__ = "crape_stats"
+    __tablename__ = "scrape_stats"
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
-    retailer = Column(String(100), ForeignKey('listings.retailer', ondelete='CASCADE'), nullable=False) #need to change foreign key to table containing retailer, once the table is created
+    retailer = Column(String(100), nullable=True) #need to change foreign key to table containing retailer, once the table is created
     date_scraped = Column(DateTime, nullable=False, default=date.today())
-    time_scraped = Column(Date, nullable=False, default=datetime())
-    total_entries = Column(Integer, nullable=False)
+    time_scraped = Column(Date, nullable=False, default=pytz.timezone('GMT'))
+    total_entries = Column(Integer, nullable=True)
     total_fails = Column(Integer, nullable=True)
-    Total_crawl_time = Column(DateTime, nullable=False)
+    Total_crawl_time = Column(DateTime, nullable=True)
 
 
 

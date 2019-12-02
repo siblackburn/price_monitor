@@ -5,10 +5,8 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 import scrapy
 
+
 class PriceMonitorItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    # need to declare fields before assigning them
     product_id = scrapy.Field()
     product_name = scrapy.Field()
     product_url = scrapy.Field()
@@ -22,6 +20,7 @@ class PriceMonitorItem(scrapy.Item):
     url_l2 = scrapy.Field()
     url_l3 = scrapy.Field()
     url_l4 = scrapy.Field()
+
 
 class PriceMonitorStats(scrapy.Item):
     retailer = scrapy.Field()
