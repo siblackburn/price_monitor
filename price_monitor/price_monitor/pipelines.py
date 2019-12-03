@@ -14,6 +14,7 @@ from datetime import date
 from .items import PriceMonitorItem, PriceMonitorStats
 from sqlalchemy.dialects.mysql import insert
 import logging
+import pytz
 
 logger = logging.getLogger('customizedlogger')
 
@@ -49,7 +50,7 @@ class PriceCrawlerDBPipeline(object):
         self.listings.retailer = item['retailer_site']
         self.listings.price_excl = item['price_excl']
         self.listings.date_scraped = date.today()
-
+        # self.listings.promo_description = item['promo_description']
         # self.listings.promo_flag = item['promo_flag']
         self.listings.price_per_unit = item['price_per_unit']
         self.listings.unit_of_measure = item['unit_measure']
@@ -57,6 +58,9 @@ class PriceCrawlerDBPipeline(object):
         self.listings.url_l4 = item['url_l4']
         self.listings.url_l3 = item['url_l3']
         self.listings.url_l2 = item['url_l2']
+        self.listings.url_l4_name = item['url_l4_name']
+        self.listings.url_l3_name = item['url_l3_name']
+        self.listings.url_l2_name = item['url_l2_name']
 
         columns_to_dict = lambda obj: {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
@@ -84,7 +88,7 @@ class PriceCrawlerDBPipeline(object):
 
         return item
 
-
+#pipeline to collect key scraping stats for each scrape and add them to a database for analysis and record keeping
 class PriceCrawlerStatsPipeline(object):
     def __init__(self):
         engine = db_connect()
@@ -104,18 +108,18 @@ class PriceCrawlerStatsPipeline(object):
                 **columns_to_dict(self.scrape_stats))
 
             on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
-                {'date_scraped': date.today(), 'time_scraped': self.scrape_stats.time_Scraped, 'retailer': self.scrape_stats.retailer}
+                {'date_scraped': date.today(), 'time_scraped': pytz.timezone('GMT')}
             )
 
-            logging.info(f'attempting to write db entry: {self.scrape_stats.retailer} on date {self.scrape_stats.date_scraped}')
+            logging.info(f'attempting to write stats to db: on date {date.today()}')
             session.execute(on_duplicate_key_stmt)
             logging.info(f'Executed duplicate key statement')
             session.commit()
-            logging.info(f'{self.scrape_stats.retailer} committed to DB')
+            logging.info(f'committed to DB')
 
         except:
             session.rollback()
-            logging.info(f'item was not written to database:{self.scrape_stats.retailer} on date {self.scrape_stats.date_scraped}')
+            logging.info(f'stat was not written to database: on date {date.today()}')
             raise Exception(f'something went wrong')
 
         finally:

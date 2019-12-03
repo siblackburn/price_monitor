@@ -14,12 +14,16 @@ class PriceMonitorItem(scrapy.Item):
     price_excl = scrapy.Field()
     retailer_site = scrapy.Field()
     promo_flag = scrapy.Field()
+    promo_description = scrapy.Field()
     price_per_unit = scrapy.Field()
     unit_measure = scrapy.Field()
     number_of_units = scrapy.Field()
     url_l2 = scrapy.Field()
     url_l3 = scrapy.Field()
     url_l4 = scrapy.Field()
+    url_l2_name = scrapy.Field()
+    url_l3_name = scrapy.Field()
+    url_l4_name = scrapy.Field()
 
 
 class PriceMonitorStats(scrapy.Item):

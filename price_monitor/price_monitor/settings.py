@@ -14,7 +14,7 @@ BOT_NAME = 'price_monitor'
 SPIDER_MODULES = ['price_monitor.spiders']
 NEWSPIDER_MODULE = 'price_monitor.spiders'
 
-
+CLOSESPIDER_PAGECOUNT = 3000
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'price_monitor (+http://www.yourdomain.com)'
 
@@ -72,7 +72,7 @@ ITEM_PIPELINES = {
 
 drivername="mysql"
 user="root"
-passwd="p"
+passwd="d"
 host="127.0.0.1"
 port="3306"
 db_name="price_crawler_db"
@@ -98,6 +98,7 @@ CONNECTION_STRING = f'mysql+pymysql://{user}:{passwd}@{host}/{db_name}'
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+HTTPERROR_ALLOWED_CODES = [301,302]
 
 import logging
 from scrapy.utils.log import configure_logging

@@ -146,7 +146,6 @@ class DdcMonitorSpider(scrapy.Spider):
         self.total_items = 0
         self.total_items += len(items_by_id)
 
-
         # use FormRequest to do a proper form post (source: https://docs.scrapy.org/en/latest/topics/request-response.html#using-formrequest-to-send-data-via-http-post)
         post_url = "https://www.duluxdecoratorcentre.co.uk/productlist/postloadproductgroups"
         yield FormRequest(post_url,
