@@ -89,40 +89,42 @@ class DdcMonitorSpider(scrapy.Spider):
 
     def parse_main_item(self, response):
         # host = DdcMonitorSpider.start_urls
-
         # NOTE(yuri): there are multiple products per page, so we should generate a list of products right?
         # I create a dictionary of items by their product ID. I do this because when I fetch the price information
         # later, I will need to match up the price with the proper product ID.
-        items_by_id = {}
-        count_url = response.meta['count_url']
-        url_l3 = response.meta['url_l3']
-        url_l2_reg = re.compile(r'\bper.*\b')
+
+        count_url = response.meta.get('count_url')
+        url_l3 = response.meta.get('url_l3')
+        url_l2_reg = re.compile(r'([^\d]*/).*/')
         url_l2 = url_l2_reg.findall(url_l3)
-        url_l1 = response.meta['url_l1']
+        url_l1 = response.meta.get('url_l1')
         # url_l3 = re.sub("^.*\/([^\d]*)/.*$", "", url_l2).strip() - regex to get everything between the last and second to last /
+        logging.info(f'parser is parsing {response.url} coming from {url_l3}')
+
+        items_by_id = {}
 
         for product in zip(
-                response.xpath(self.price_IDXpath).extract(),
-                response.xpath(self.ProductNamesXpath).extract(),
-                response.xpath(self.ProductLinksXpath).extract(),
-                response.xpath(self.ProductImagesXpath).extract(),
-                response.xpath(self.catlevel1Xpath).extract(),
-                response.xpath(self.catlevel2Xpath).extract(),
-                response.xpath(self.catlevel3Xpath).extract(),
+            response.xpath(self.price_IDXpath).extract(),
+            response.xpath(self.ProductNamesXpath).extract(),
+            response.xpath(self.ProductLinksXpath).extract(),
+            response.xpath(self.ProductImagesXpath).extract(),
+            response.xpath(self.catlevel1Xpath).extract(),
+            response.xpath(self.catlevel2Xpath).extract(),
+            response.xpath(self.catlevel3Xpath).extract()
         ):
-            host = 'https://www.duluxdecoratorcentre.co.uk'
+
             item = PriceMonitorItem()
             item['product_id'] = product[0]
             item['product_name'] = product[1]
-            item['product_url'] = host + product[2]
+            item['product_url'] = str('https://www.duluxdecoratorcentre.co.uk' + product[2])
             item['product_image'] = product[3]
-            item['retailer_site'] = host
+            item['retailer_site'] = 'https://www.duluxdecoratorcentre.co.uk'
             item['price_per_unit'] = None
             item['unit_measure'] = None
             item['number_of_units'] = None
-            item['url_l3'] = url_l3
-            item['url_l2'] = url_l2
-            item['url_l1'] = url_l1
+            item['url_l3'] = str(url_l3)
+            item['url_l2'] = str(url_l2)
+            item['url_l1'] = str(url_l1)
             item['cat_level3'] = product[6]
             item['cat_level2'] = product[5]
             item['cat_level1'] = product[4]
@@ -131,6 +133,7 @@ class DdcMonitorSpider(scrapy.Spider):
 
             # set item into our dictionary by id
             items_by_id[product[0]] = item
+            logging.info(f'before form callback, items by id length is {len(items_by_id)}')
 
             if item['product_name'] is None:
                 logging.info(f'item returned no info: {response.url}')
@@ -139,6 +142,7 @@ class DdcMonitorSpider(scrapy.Spider):
         def price_form_callback(response):
             # populate the price information of each item and then return our items
             for price_info in json.loads(response.text):
+                logging.info(f'price info is {price_info}')
                 product_id = price_info['Id']
                 price = price_info['PriceExclVat']
                 price_formatted = re.sub("[^\d\.]", "", price)
@@ -150,7 +154,6 @@ class DdcMonitorSpider(scrapy.Spider):
             # return all the items found
             if len(items_by_id) != int(count_url):
                 logging.info(f'found {len(items_by_id)} prices but page contained {count_url} items')
-
 
             #yield all of the items from the main parse function
             for items in items_by_id.values():
@@ -165,7 +168,9 @@ class DdcMonitorSpider(scrapy.Spider):
                           formdata=dict(ids=list(items_by_id.keys())),
                           callback=price_form_callback
                           )
+        logging.info(f'items by id are {items_by_id.keys()}')
 
+        #attempt to log key stats from scrape to a separate table in db
         total_entries = self.crawler.stats.set_value("Total items scraped", self.total_items, spider=DdcMonitorSpider)
         yield total_entries
 

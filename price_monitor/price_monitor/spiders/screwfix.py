@@ -24,6 +24,9 @@ class ScrewfixSpider(CrawlSpider):
         url_l1 = response.xpath('//*[@id="breadcrumb_item_search_result_2_top"]/@href').extract()
         # url_l4 = response.xpath('//*[@id="breadcrumb_item_search_result_1_top"]/@href').extract()
 
+        cat_lvl1 = unit_measure_reg = re.compile(r'((/c/decorating)[\d\d\d]*/).*/')
+        cat_level1 = cat_lvl1.findall(url_l1)
+
         logging.info(f'attempting to scrape {url_l2} coming from {url_l1}')
 
         ProductIDXpath = '//*[contains(@id, "product_quote")]/@quotenumberproductid' #for SF
@@ -62,7 +65,7 @@ class ScrewfixSpider(CrawlSpider):
             item['url_l1'] = url_l1
             item['cat_level3'] = None
             item['cat_level2'] = None
-            item['cat_level1'] = None
+            item['cat_level1'] = cat_level1
             item['was_price'] = None
             item['promo_description'] = None
 

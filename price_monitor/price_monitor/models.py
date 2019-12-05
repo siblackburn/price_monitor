@@ -28,8 +28,8 @@ class Listings(Base):
 
     unique_id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) # required
     product_hash = Column(String(200), nullable=True)
-    product_name = Column(String(200), nullable=False) # required
-    product_url = Column(String(200), nullable=False) # required
+    product_name = Column(String(350), nullable=False) # required
+    product_url = Column(String(500), nullable=False) # required
     product_image_url = Column(String(300), nullable=True)
     price_excl = Column(Float, nullable=False) # required
     promo_flag = Column(String(20), nullable=True)
@@ -41,9 +41,9 @@ class Listings(Base):
     price_per_unit = Column(Float, nullable=True)
     unit_of_measure = Column(String(10), nullable=True)
     number_of_units = Column(Float, nullable=True)
-    url_l1 = Column(String(300), nullable=True)
-    url_l2 = Column(String(300), nullable=True)
-    url_l3 = Column(String(300), nullable=True)
+    url_l1 = Column(String(500), nullable=True)
+    url_l2 = Column(String(500), nullable=True)
+    url_l3 = Column(String(500), nullable=True)
     cat_level1 = Column(String(300), nullable=True)
     cat_level2 = Column(String(300), nullable=True)
     cat_level3 = Column(String(300), nullable=True)

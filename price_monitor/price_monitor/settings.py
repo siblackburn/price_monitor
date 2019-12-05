@@ -14,7 +14,7 @@ BOT_NAME = 'price_monitor'
 SPIDER_MODULES = ['price_monitor.spiders']
 NEWSPIDER_MODULE = 'price_monitor.spiders'
 
-CLOSESPIDER_PAGECOUNT = 3000
+CLOSESPIDER_PAGECOUNT = 30000
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'price_monitor (+http://www.yourdomain.com)'
 
@@ -67,7 +67,7 @@ ROBOTSTXT_OBEY = True
 ITEM_PIPELINES = {
    'price_monitor.pipelines.PriceMonitorPipeline': 300,
    'price_monitor.pipelines.PriceCrawlerDBPipeline': 200,
-   'price_monitor.pipelines.PriceCrawlerStatsPipeline': 300
+
 }
 
 drivername="mysql"
