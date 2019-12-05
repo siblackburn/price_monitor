@@ -34,17 +34,19 @@ class Listings(Base):
     price_excl = Column(Float, nullable=False) # required
     promo_flag = Column(String(20), nullable=True)
     promo_description = Column(String(200), nullable=True)
+    hidden_price = Column(Float, nullable=True)
+    was_price = Column(Float, nullable=True)
     retailer = Column(String(300), nullable=False)  # required
     date_scraped = Column(DateTime, nullable=False, default=date.today())
     price_per_unit = Column(Float, nullable=True)
     unit_of_measure = Column(String(10), nullable=True)
     number_of_units = Column(Float, nullable=True)
+    url_l1 = Column(String(300), nullable=True)
     url_l2 = Column(String(300), nullable=True)
     url_l3 = Column(String(300), nullable=True)
-    url_l4 = Column(String(300), nullable=True)
-    url_l2_name = Column(String(200), nullable=True)
-    url_l3_name = Column(String(200), nullable=True)
-    url_l4_name = Column(String(200), nullable=True)
+    cat_level1 = Column(String(300), nullable=True)
+    cat_level2 = Column(String(300), nullable=True)
+    cat_level3 = Column(String(300), nullable=True)
 
     UniqueConstraint('date_scraped', 'product_url', 'retailer', name='date_product_retailer_unique_constraint')
 

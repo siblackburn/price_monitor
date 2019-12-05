@@ -21,10 +21,10 @@ class ScrewfixSpider(CrawlSpider):
     def parse_main_item(self, response):
         host = 'https://www.screwfix.com'
         url_l2 = str(response.url)
-        url_l3 = response.xpath('//*[@id="breadcrumb_item_search_result_2_top"]/@href').extract()
-        url_l4 = response.xpath('//*[@id="breadcrumb_item_search_result_1_top"]/@href').extract()
+        url_l1 = response.xpath('//*[@id="breadcrumb_item_search_result_2_top"]/@href').extract()
+        # url_l4 = response.xpath('//*[@id="breadcrumb_item_search_result_1_top"]/@href').extract()
 
-        logging.info(f'attempting to scrape {url_l2} coming from {url_l3} > {url_l4}')
+        logging.info(f'attempting to scrape {url_l2} coming from {url_l1}')
 
         ProductIDXpath = '//*[contains(@id, "product_quote")]/@quotenumberproductid' #for SF
         ProductNamesXpath = '//*[contains(@id, "product_description")]/@title'  # for SF
@@ -57,9 +57,14 @@ class ScrewfixSpider(CrawlSpider):
             item['price_per_unit'] = None
             item['unit_measure'] = None
             item['number_of_units'] = None
-            item['url_l4'] = url_l4
-            item['url_l3'] = url_l3
+            item['url_l3'] = None
             item['url_l2'] = url_l2
+            item['url_l1'] = url_l1
+            item['cat_level3'] = None
+            item['cat_level2'] = None
+            item['cat_level1'] = None
+            item['was_price'] = None
+            item['promo_description'] = None
 
             if (item['product_name'] or item['price_excl'] or item['retailer'] or item['product_url']) is None:
                 logging.info(f'item returned no info: {response.url}')

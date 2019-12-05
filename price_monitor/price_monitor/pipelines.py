@@ -50,17 +50,19 @@ class PriceCrawlerDBPipeline(object):
         self.listings.retailer = item['retailer_site']
         self.listings.price_excl = item['price_excl']
         self.listings.date_scraped = date.today()
-        # self.listings.promo_description = item['promo_description']
+        self.listings.promo_description = item['promo_description']
         # self.listings.promo_flag = item['promo_flag']
+        # self.listings.hidden_price = item['hidden_price']
+        self.listings.was_price = item['was_price']
         self.listings.price_per_unit = item['price_per_unit']
         self.listings.unit_of_measure = item['unit_measure']
         self.listings.number_of_units = item['number_of_units']
-        self.listings.url_l4 = item['url_l4']
-        self.listings.url_l3 = item['url_l3']
+        self.listings.url_l1 = item['url_l1']
         self.listings.url_l2 = item['url_l2']
-        self.listings.url_l4_name = item['url_l4_name']
-        self.listings.url_l3_name = item['url_l3_name']
-        self.listings.url_l2_name = item['url_l2_name']
+        self.listings.url_l3 = item['url_l3']
+        self.listings.cat_level1 = item['cat_level1']
+        self.listings.cat_level2 = item['cat_level2']
+        self.listings.cat_level3 = item['cat_level3']
 
         columns_to_dict = lambda obj: {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
@@ -104,7 +106,7 @@ class PriceCrawlerStatsPipeline(object):
         columns_to_dict = lambda obj: {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
 
         try:
-            insert_stmt = insert(Listings).values(
+            insert_stmt = insert(ScrapeStats).values(
                 **columns_to_dict(self.scrape_stats))
 
             on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(

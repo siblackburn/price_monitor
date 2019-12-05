@@ -26,8 +26,8 @@ class TradePointSpider(CrawlSpider):
 
     def parse_main_item(self, response):
         host = 'https://www.trade-point.co.uk'
-        url_l2 = str(response.url)
-        url_l3 = response.xpath('normalize-space(/html/body/div[1]/div[1]/div/nav/ul/li[last()-1]/a/@href)').extract()
+        url_l3 = str(response.url)
+        url_l2 = response.xpath('normalize-space(/html/body/div[1]/div[1]/div/nav/ul/li[last()-1]/a/@href)').extract()
         # url_l4 = response.xpath('/html/body/div[1]/div[1]/div/nav/ul/li[last()-2]/a/@href').extract() #isn't working due to the 2nd to last item starting with a #, e.g.
 
         logging.info(f'attempting to scrape {url_l2} coming from {url_l3}')
@@ -59,16 +59,21 @@ class TradePointSpider(CrawlSpider):
             item = PriceMonitorItem()
             item['product_id'] = None
             item['product_name'] = product[0]
-            item['product_url'] = product[1]
+            item['product_url'] = host + product[1]
             item['product_image'] = product[2]
             item['price_excl'] = float(product[3] + "." + product[4])
             item['retailer_site'] = host
             item['price_per_unit'] = float(product[5] + "." + product[6])
             item['unit_measure'] = product[7]
             item['number_of_units'] = float(round((item['price_excl'] / item['price_per_unit']), 3))
-            item['url_l4'] = None
             item['url_l3'] = url_l3
             item['url_l2'] = url_l2
+            item['url_l1'] = None #could get string from url_l2
+            item['cat_level3'] = None
+            item['cat_level2'] = None
+            item['cat_level1'] = None
+            item['was_price'] = None
+            item['promo_description'] = None
 
             if (item['product_name'] or item['price_excl'] or item['retailer'] or item['product_url']) is None:
                 logging.info(f'item returned no info: {response.url}')

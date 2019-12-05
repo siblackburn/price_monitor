@@ -72,7 +72,7 @@ ITEM_PIPELINES = {
 
 drivername="mysql"
 user="root"
-passwd="d"
+passwd="password"
 host="127.0.0.1"
 port="3306"
 db_name="price_crawler_db"
