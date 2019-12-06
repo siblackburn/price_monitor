@@ -55,20 +55,24 @@ class WickesSpider(CrawlSpider):
             price_formatted = re.sub("[^\d\.]", "", product[3])
             #turn into excluding vat
             price_excl = round(float(price_formatted) / 1.2, 2)
+            price_incl = round(float(price_formatted), 2)
             trade_price_excl = round(price_excl * 0.9, 2)
 
             #format the price per unit measure (the numerical element) and backcalculate number of units in product
             price_per_unit = re.sub("\[p].*$|[^\d\.]", "", product[4])
             price_per_unit = price_per_unit[0:5]
             if price_per_unit.replace('.', '', 1).isdigit():
-                price_per_unit_formatted = float(price_per_unit)
-                number_of_units = (price_excl * 1.2) / price_per_unit_formatted
+                public_price_per_unit_formatted = float(price_per_unit)
+                number_of_units = (price_excl * 1.2) / public_price_per_unit_formatted
+                trade_price_per_unit_formatted = trade_price_excl / number_of_units
             else:
-                price_per_unit_formatted = None
+                trade_price_per_unit_formatted = None
                 number_of_units = None
 
+            #extract unit measure from same xpath as price per unit
             unit_measure_reg = re.compile(r'\bper.*\b')
             unit_measure = unit_measure_reg.findall(product[4])
+            #format promo description and was price
             promo_description = product[9].strip()
             was_price = re.sub("[^\d\.]", "", product[8]).strip()
 
@@ -80,7 +84,7 @@ class WickesSpider(CrawlSpider):
             item['product_image'] = product[2]
             item['price_excl'] = trade_price_excl
             item['retailer_site'] = host
-            item['price_per_unit'] = price_per_unit_formatted
+            item['price_per_unit'] = trade_price_per_unit_formatted
             item['unit_measure'] = unit_measure
             item['number_of_units'] = number_of_units
             item['url_l3'] = url_l3
