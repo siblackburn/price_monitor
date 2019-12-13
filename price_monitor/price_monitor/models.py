@@ -7,7 +7,8 @@ from scrapy.utils.project import get_project_settings
 from datetime import datetime, date, timezone
 from sqlalchemy import UniqueConstraint
 import pytz
-
+from pytz import timezone, all_timezones
+gmt = pytz.timezone('UTC')
 Base = declarative_base()
 
 
@@ -16,7 +17,7 @@ def db_connect():
     Performs database connection using database settings from settings.py.
     Returns sqlalchemy engine instance
     """
-    return create_engine(get_project_settings().get("CONNECTION_STRING"))
+    return create_engine(get_project_settings().get("CONNECTION_STRING"), echo=True)
 
 
 def create_table(engine):
@@ -37,7 +38,8 @@ class Listings(Base):
     hidden_price = Column(Float, nullable=True)
     was_price = Column(Float, nullable=True)
     retailer = Column(String(150), nullable=False)  # required
-    date_scraped = Column(DateTime, nullable=False, default=date.today())
+    date_scraped = Column(Date, nullable=False, default=date.today())
+    time_scraped = Column(DateTime, nullable=False, default=datetime.now(gmt))
     price_per_unit = Column(Float, nullable=True)
     unit_of_measure = Column(String(10), nullable=True)
     number_of_units = Column(Float, nullable=True)
@@ -48,7 +50,8 @@ class Listings(Base):
     cat_level2 = Column(String(300), nullable=True)
     cat_level3 = Column(String(300), nullable=True)
 
-    __table_args__ = (UniqueConstraint('date_scraped', 'product_url', 'retailer', name='date_product_retailer_unique_constraint'),)
+    __table_args__ = tuple(
+        [UniqueConstraint('date_scraped', 'product_name', 'retailer', name='date_product_retailer_unique_constraint')])
 
 
 class ScrapeStats(Base):

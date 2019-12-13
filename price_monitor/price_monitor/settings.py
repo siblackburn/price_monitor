@@ -14,7 +14,9 @@ BOT_NAME = 'price_monitor'
 SPIDER_MODULES = ['price_monitor.spiders']
 NEWSPIDER_MODULE = 'price_monitor.spiders'
 
-CLOSESPIDER_PAGECOUNT = 30000
+CLOSESPIDER_PAGECOUNT = 20000
+URLLENGTH_LIMIT = 750
+DEPTH_LIMIT = 30
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'price_monitor (+http://www.yourdomain.com)'
 
@@ -46,9 +48,9 @@ ROBOTSTXT_OBEY = True
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
+# SPIDER_MIDDLEWARES = {
 #    'price_monitor.middlewares.PriceMonitorSpiderMiddleware': 543,
-#}
+# }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html

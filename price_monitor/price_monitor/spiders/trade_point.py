@@ -16,13 +16,17 @@ class TradePointSpider(CrawlSpider):
     allowed_domains = ['trade-point.co.uk']
     start_urls = ['https://www.trade-point.co.uk']
 
-    rules = Rule(LinkExtractor(allow='(painting)', deny=['(Heating)', '(Electrical)', '(Tiling)']), callback='parse_main_item', follow=True),
+    rules = Rule(LinkExtractor(allow=['(/departments/painting-decorating)', '(/new-tradepoint/departments/painting-and-decorating)'],
+                               deny=['(Heating)', '(Electrical)', '(Tiling)']), callback='parse_main_item', follow=True),
 
     def parse_main_item(self, response):
         host = 'https://www.trade-point.co.uk'
         url_l3 = str(response.url)
-        url_l2 = response.xpath('normalize-space(/html/body/div[1]/div[1]/div/nav/ul/li[last()-1]/a/@href)').extract()
+        url_l2_path = response.xpath('normalize-space(/html/body/div[1]/div[1]/div/nav/ul/li[last()-1]/a/@href)').extract()
+        url_l1_path = response.xpath('/html/body/div[1]/div[1]/div/nav/ul/li[3]/a[2]/@href').extract()
         # url_l4 = response.xpath('/html/body/div[1]/div[1]/div/nav/ul/li[last()-2]/a/@href').extract() #isn't working due to the 2nd to last item starting with a #, e.g.
+        url_l2 = str(url_l2_path).replace("[", "").replace("]", "").replace("'", "")
+        url_l1 = str(url_l1_path).replace("[", "").replace("]", "").replace("'", "")
 
         logging.info(f'attempting to scrape {response.url} coming from {url_l2}')
 
@@ -35,11 +39,9 @@ class TradePointSpider(CrawlSpider):
         PricePerUnitPoundsXpath = '//*[@id]/div[1]/div[1]/p/span/span[2]/text()'
         PricePerUnitPenceXpath = '//*[@id]/div[1]/div[1]/p/span/span[4]/text()'
         UnitofMeasureXpath = 'normalize-space(//*[@id]/div/div[1]/p/text())'
-
         cat_level1Xpath = '/html/body/div[1]/div[1]/div/nav/ul/li[3]/a[2]/span/text()'
         cat_level2Xpath = '/html/body/div[1]/div[1]/div/nav/ul/li[4]/a/span/text()'
         cat_level3Xpath = 'normalize-space(/html/body/div[1]/div[1]/div/nav/ul/li[5]/text())'
-
 
         for product in zip(
             response.xpath(ProductNamesXpath).extract(),
@@ -68,8 +70,8 @@ class TradePointSpider(CrawlSpider):
             item['unit_measure'] = product[7]
             item['number_of_units'] = float(round((item['price_excl'] / item['price_per_unit']), 3))
             item['url_l3'] = url_l3
-            item['url_l2'] = url_l2
-            item['url_l1'] = None #could get string from url_l2
+            item['url_l2'] = host + str(url_l2)
+            item['url_l1'] = host + str(url_l1)
             item['cat_level3'] = product[8]
             item['cat_level2'] = product[9]
             item['cat_level1'] = product[10]

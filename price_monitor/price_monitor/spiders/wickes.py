@@ -21,8 +21,10 @@ class WickesSpider(CrawlSpider):
     def parse_main_item(self, response):
         host = 'https://www.wickes.co.uk'
         url_l3 = str(response.url)
-        url_l2 = str(response.xpath('/html/body/div/ul/li[last()-1]/a/@href').extract())
-        url_l1 = str(response.xpath('/html/body/div/ul/li[last()-2]/a/@href').extract()) #l4 doesn't tell you much (all painting and decorating. consider going one level deeper, like screwfix
+        url_l2_path = str(response.xpath('/html/body/div/ul/li[last()-1]/a/@href').extract())
+        url_l2 = str(url_l2_path).replace("[", "").replace("]", "").replace("'", "")
+        url_l1_path = str(response.xpath('/html/body/div/ul/li[last()-2]/a/@href').extract()) #l4 doesn't tell you much (all painting and decorating. consider going one level deeper, like screwfix
+        url_l1 = str(url_l1_path).replace("[", "").replace("]", "").replace("'", "")
         logging.info(f'attempting to scrape {url_l3} coming from {url_l2} > {url_l1}')
 
         # ProductIDXpath = None# for wickes this is the number after the last forwardslash in the href
@@ -71,10 +73,12 @@ class WickesSpider(CrawlSpider):
 
             #extract unit measure from same xpath as price per unit
             unit_measure_reg = re.compile(r'\bper.*\b')
-            unit_measure = unit_measure_reg.findall(product[4])
+            unit_measure_unformatted = unit_measure_reg.findall(product[4])
+            unit_measure = str(unit_measure_unformatted).replace("[", "").replace("]", "").replace("'", "")
             #format promo description and was price
             promo_description = product[9].strip()
-            was_price = re.sub("[^\d\.]", "", product[8]).strip()
+            was_price_inc = re.sub("[^\d\.]", "", product[8]).strip()
+            trade_was_price = round((float(was_price_inc) / 1.2)*0.9,2)
 
             logging.info(f'There are {len(product)} products found')
 
@@ -85,16 +89,16 @@ class WickesSpider(CrawlSpider):
             item['price_excl'] = trade_price_excl
             item['retailer_site'] = host
             item['price_per_unit'] = trade_price_per_unit_formatted
-            item['unit_measure'] = unit_measure
+            item['unit_measure'] = str(unit_measure)
             item['number_of_units'] = number_of_units
             item['url_l3'] = url_l3
-            item['url_l2'] = url_l2
-            item['url_l1'] = url_l1
+            item['url_l2'] = host + str(url_l2)
+            item['url_l1'] = host + str(url_l1)
             item['cat_level3'] = None
             item['cat_level2'] = product[5]
             item['cat_level1'] = product[6]
             item['product_id'] = None
-            item['was_price'] = float(was_price) # need to strop \n before enabling this. Same problem as promo description, where normalize space would not return a value
+            item['was_price'] = float(trade_was_price) # need to strop \n before enabling this. Same problem as promo description, where normalize space would not return a value
             item['promo_description'] = promo_description if str else None
 
             logging.info(f'there are {len(item)} items in item')

@@ -6,7 +6,10 @@
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
-
+from scrapy.spidermiddlewares.depth import DepthMiddleware
+from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
+import logging
+from scrapy.http import Request
 
 class PriceMonitorSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -101,3 +104,76 @@ class PriceMonitorDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+logger = logging.getLogger(__name__)
+class DepthMiddleware(object):
+
+    def __init__(self, maxdepth, stats, verbose_stats=False, prio=1):
+        self.maxdepth = maxdepth
+        self.stats = stats
+        self.verbose_stats = verbose_stats
+        self.prio = prio
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
+        maxdepth = settings.getint('DEPTH_LIMIT')
+        verbose = settings.getbool('DEPTH_STATS_VERBOSE')
+        prio = settings.getint('DEPTH_PRIORITY')
+        return cls(maxdepth, crawler.stats, verbose, prio)
+
+    def process_spider_output(self, response, result, spider):
+        def _filter(request):
+            if isinstance(request, Request):
+                depth = response.meta['depth'] + 1
+                request.meta['depth'] = depth
+                if self.prio:
+                    request.priority -= depth * self.prio
+                if self.maxdepth and depth > self.maxdepth:
+                    logger.debug(
+                        "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
+                        {'maxdepth': self.maxdepth, 'requrl': request.url},
+                        extra={'spider': spider}
+                    )
+                    return False
+                else:
+                    if self.verbose_stats:
+                        self.stats.inc_value('request_depth_count/%s' % depth,
+                                             spider=spider)
+                    self.stats.max_value('request_depth_max', depth,
+                                         spider=spider)
+            return True
+
+        # base case (depth=0)
+        if 'depth' not in response.meta:
+            response.meta['depth'] = 0
+            if self.verbose_stats:
+                self.stats.inc_value('request_depth_count/0', spider=spider)
+
+        return (r for r in result or () if _filter(r))
+
+
+    class UrlLengthMiddleware(object):
+
+        def __init__(self, maxlength):
+            self.maxlength = maxlength
+
+        @classmethod
+        def from_settings(cls, settings):
+            maxlength = settings.getint('URLLENGTH_LIMIT')
+            if not maxlength:
+                raise NotConfigured
+            return cls(maxlength)
+
+        def process_spider_output(self, response, result, spider):
+            def _filter(request):
+                if isinstance(request, Request) and len(request.url) > self.maxlength:
+                    logger.debug("Ignoring link (url length > %(maxlength)d): %(url)s ",
+                                 {'maxlength': self.maxlength, 'url': request.url},
+                                 extra={'spider': spider})
+                    return False
+                else:
+                    return True
+
+            return (r for r in result or () if _filter(r))

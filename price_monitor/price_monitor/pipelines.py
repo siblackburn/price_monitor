@@ -10,12 +10,13 @@ from sqlalchemy import create_engine, Column, Table, ForeignKey, MetaData
 from price_monitor.models import Listings, ScrapeStats, db_connect, create_table
 from sqlalchemy.orm import sessionmaker
 from scrapy.exporters import CsvItemExporter
-from datetime import date
+from datetime import datetime, date, timezone
 from .items import PriceMonitorItem, PriceMonitorStats
 from sqlalchemy.dialects.mysql import insert
 import logging
 import pytz
-
+from sqlalchemy import inspect
+gmt = pytz.timezone('UTC')
 logger = logging.getLogger('customizedlogger')
 
 class PriceMonitorPipeline(object):
@@ -50,6 +51,7 @@ class PriceCrawlerDBPipeline(object):
         self.listings.retailer = item['retailer_site']
         self.listings.price_excl = item['price_excl']
         self.listings.date_scraped = date.today()
+        self.listings.time_scraped = datetime.now(gmt)
         self.listings.promo_description = item['promo_description']
         # self.listings.promo_flag = item['promo_flag']
         # self.listings.hidden_price = item['hidden_price']
@@ -65,22 +67,19 @@ class PriceCrawlerDBPipeline(object):
         self.listings.cat_level3 = item['cat_level3']
 
         columns_to_dict = lambda obj: {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+        new_listing = columns_to_dict(self.listings)
 
         try:
-            insert_stmt = insert(Listings).values(
-                **columns_to_dict(self.listings))
-
-            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
-                {'product_name': self.listings.product_name, 'date_scraped': date.today(), 'retailer': self.listings.retailer}
-            )
-
-            logging.info(f'attempting to write db entry: {self.listings.product_name} on date {self.listings.date_scraped}')
+            insert_stmt = insert(Listings).values(**new_listing)
+            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(**new_listing)
+            logging.info(
+                f'attempting to write db entry: {self.listings.product_name} on date {self.listings.date_scraped}')
             session.execute(on_duplicate_key_stmt)
             logging.info(f'Executed duplicate key statement')
             session.commit()
             logging.info(f'{self.listings.product_name} committed to DB')
 
-        except:
+        except Exception:
             session.rollback()
             logging.info(f'item was not written to database: {self.listings.product_name}, {self.listings.product_url}, {self.listings.url_l2}, {self.listings.url_l3}')
             raise Exception(f'something went wrong')
@@ -109,9 +108,7 @@ class PriceCrawlerStatsPipeline(object):
             insert_stmt = insert(ScrapeStats).values(
                 **columns_to_dict(self.scrape_stats))
 
-            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(
-                {'date_scraped': date.today(), 'time_scraped': pytz.timezone('GMT')}
-            )
+            on_duplicate_key_stmt = insert_stmt.on_duplicate_key_update(**columns_to_dict(self.scrape_stats))
 
             logging.info(f'attempting to write stats to db: on date {date.today()}')
             session.execute(on_duplicate_key_stmt)
