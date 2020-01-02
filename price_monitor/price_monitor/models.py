@@ -30,7 +30,7 @@ class Listings(Base):
     unique_id = Column(Integer, primary_key=True, autoincrement=True, nullable=False) # required
     product_hash = Column(String(200), nullable=True)
     product_name = Column(String(350), nullable=False) # required
-    product_url = Column(String(400), nullable=False) # required
+    product_url = Column(String(900), nullable=False) # required
     product_image_url = Column(String(300), nullable=True)
     price_excl = Column(Float, nullable=False) # required
     promo_flag = Column(String(20), nullable=True)
