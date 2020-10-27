@@ -9,7 +9,7 @@ cffi==1.13.2
 chardet==3.0.4
 cloudbiolinux==0.1
 constantly==15.1.0
-cryptography==2.8
+cryptography==3.2
 cssselect==1.1.0
 db==0.1.1
 fabric==2.5.0
